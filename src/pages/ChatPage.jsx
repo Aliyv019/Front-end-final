@@ -1,8 +1,13 @@
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChatEngine } from 'react-chat-engine';
 import { useUser } from '../context/UserContext';
 export default function ChatPage() {
+    const PubNub=require('pubnub');
+    const pubnub= new PubNub({
+        publishKey:'pub-c-ffe1f819-f3a1-4a89-a787-3d0ece760468',
+        subscribeKey:'sub-c-3da15639-dfb5-4f48-b345-a08fe215a9c8',
+        userId:'user-1'
+    })
     const { user } = useUser();
     const navigate = useNavigate();
     const handleLogout = async () => {
@@ -19,13 +24,7 @@ export default function ChatPage() {
                     Logout
                 </div>
             </div>
-            <ChatEngine
-                height='calc(100vh - 95px)'
-                width='100%'
-                projectID='edaa1289-6c29-4343-965e-f6c066cf8de3'
-                userName={user.email}
-                userSecret={user.password}
-            />
+            
         </div>
     );
 }
