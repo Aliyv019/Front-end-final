@@ -1,32 +1,69 @@
+// src/components/Login.jsx
 import React, { useState } from 'react';
-import { useNavigate} from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useUser } from '../context/UserContext';
 
 export default function Login() {
-  const [email,setEmail]=useState(null)
-  const [password,setPassword]=useState(null)
-  const { setUser,user } = useUser();
-
-  // Google login handler using Firebase v10 syntax
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const { login, authError } = useUser();
   const navigate = useNavigate();
 
   const handleLogin = (e) => {
-    e.preventDefault()
-    setEmail("")
-    setPassword("")
-    setUser({email,password})
-    navigate('/chats')
-    console.log(user);
-    
+    e.preventDefault();
+    if (login(email, password)) {
+      navigate('/chats');
+    }
   };  
+
   return (
-    <div className="flex flex-col items-center justify-center h-fit w-fit gap-4 p-6 mx-4 max-sm:p-11 px-24 rounded-lg bg-white">
-      <h2 className="font-bold text-lg">Welcome to Messenger!</h2>
-      <form onSubmit={handleLogin}>
-        <input type="text" onChange={(e)=>setEmail(e.target.value)} value={email} placeholder="Username" className="border-2 border-gray-300 rounded-lg p-2 w-full mb-4" />
-        <input type="password" onChange={(e)=>setPassword(e.target.value)} value={password} placeholder="Password" className="border-2 border-gray-300 rounded-lg p-2 w-full mb-4" />
-        <button type='submit' className=' bg-blue-400 p-4 rounded-xl text-white font-semibold'>Log In</button>
-      </form>
+    <div className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-md w-full space-y-8 bg-white p-8 rounded-xl shadow-lg">
+        <div>
+          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+            Welcome to Messenger
+          </h2>
+        </div>
+        <form className="mt-8 space-y-6" onSubmit={handleLogin}>
+          {authError && (
+            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+              <span className="block sm:inline">{authError}</span>
+            </div>
+          )}
+          <div className="rounded-md shadow-sm -space-y-px">
+            <div>
+              <input
+                type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+                placeholder="Email address"
+              />
+            </div>
+            <div>
+              <input
+                type="password"
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+                placeholder="Password"
+                minLength={6}
+              />
+            </div>
+          </div>
+
+          <div>
+            <button
+              type="submit"
+              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            >
+              Sign in
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }

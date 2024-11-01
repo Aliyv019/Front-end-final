@@ -1,10 +1,11 @@
-import React from 'react'
-import Login from '../components/Login'
+// src/pages/LoginPage.jsx
+import React from 'react';
+import Login from '../components/Login';
 
 export default function LoginPage() {
   return (
-    <div className='bg-blue-500 h-screen flex items-center justify-center'>
-        <Login/>
+    <div className="min-h-screen bg-gradient-to-r from-blue-500 to-blue-600">
+      <Login />
     </div>
-  )
+  );
 }
