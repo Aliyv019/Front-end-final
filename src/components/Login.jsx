@@ -1,29 +1,32 @@
-import React from 'react';
-import { GoogleOutlined,FacebookOutlined } from '@ant-design/icons';
-import { auth } from '../components/firebase';
-import firebase from 'firebase/compat/app';
+import React, { useState } from 'react';
+import { useNavigate} from 'react-router-dom';
+import { useUser } from '../context/UserContext';
+
 export default function Login() {
-  const handleGoogleLogin = () => {
-    const provider = new firebase.auth.GoogleAuthProvider();
-    auth.signInWithRedirect(provider);
-};
+  const [email,setEmail]=useState(null)
+  const [password,setPassword]=useState(null)
+  const { setUser,user } = useUser();
 
-  const handleFacebookLogin = () => {
-    const provider = new firebase.auth.FacebookAuthProvider();  // Use firebase.auth properly
-    auth.signInWithRedirect(provider);
-  };
+  // Google login handler using Firebase v10 syntax
+  const navigate = useNavigate();
 
+  const handleLogin = (e) => {
+    e.preventDefault()
+    setEmail("")
+    setPassword("")
+    setUser({email,password})
+    navigate('/chats')
+    console.log(user);
+    
+  };  
   return (
-    <div className="flex flex-col items-center justify-center h-fit w-fit gap-4 p-11 px-24 rounded-lg bg-white">
+    <div className="flex flex-col items-center justify-center h-fit w-fit gap-4 p-6 mx-4 max-sm:p-11 px-24 rounded-lg bg-white">
       <h2 className="font-bold text-lg">Welcome to Messenger!</h2>
-      <div onClick={handleGoogleLogin} className="bg-blue-600 text-white p-2 rounded-lg cursor-pointer flex items-center gap-2">
-        <GoogleOutlined className="text-white" />
-        Sign In with Google
-      </div>
-      <div onClick={handleFacebookLogin} className="bg-indigo-700 text-white p-2 rounded-lg cursor-pointer flex items-center gap-2">
-        <FacebookOutlined className="text-white" />
-        Sign In with Facebook
-      </div>
+      <form onSubmit={handleLogin}>
+        <input type="text" onChange={(e)=>setEmail(e.target.value)} value={email} placeholder="Username" className="border-2 border-gray-300 rounded-lg p-2 w-full mb-4" />
+        <input type="password" onChange={(e)=>setPassword(e.target.value)} value={password} placeholder="Password" className="border-2 border-gray-300 rounded-lg p-2 w-full mb-4" />
+        <button type='submit' className=' bg-blue-400 p-4 rounded-xl text-white font-semibold'>Log In</button>
+      </form>
     </div>
   );
 }

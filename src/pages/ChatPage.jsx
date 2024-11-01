@@ -1,18 +1,11 @@
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChatEngine } from 'react-chat-engine';
-import { useAuth } from '../contextss/AuthContext';
-import { auth } from '../components/firebase';
-
+import { useUser } from '../context/UserContext';
 export default function ChatPage() {
-    const { user } = useAuth();
+    const { user } = useUser();
     const navigate = useNavigate();
-    useEffect(() => {
-        console.log(user);
-        
-    }, [user]);
     const handleLogout = async () => {
-        await auth.signOut();
         navigate('/');
     };
 
@@ -20,17 +13,18 @@ export default function ChatPage() {
 
     return (
         <div>
-            <div>
-                <div>Messenger</div>
-                <div className='cursor-pointer' onClick={handleLogout}>
+            <div  className=' bg-blue-600 justify-between flex px-4 py-2 font-sans text-2xl'>
+                <div className='p-3 rounded text-white'>Messenger</div>
+                <div className='cursor-pointer bg-purple-500 rounded p-2 text-white font-bold' onClick={handleLogout}>
                     Logout
                 </div>
             </div>
             <ChatEngine
-                height='100%'
-                projectID='f8e765c8-44d1-4d1b-9718-2061c334ab8c'
+                height='calc(100vh - 95px)'
+                width='100%'
+                projectID='edaa1289-6c29-4343-965e-f6c066cf8de3'
                 userName={user.email}
-                userSecret={user.uid}
+                userSecret={user.password}
             />
         </div>
     );

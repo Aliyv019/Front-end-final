@@ -1,18 +1,18 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import LoginPage from "./pages/LoginPage";
-import { AuthProvider } from "./contextss/AuthContext";
+import { UserProvider } from "./context/UserContext";
 import ChatPage from "./pages/ChatPage";
 
 function App() {
   return (
-    <div className="App">
+    <div className="App h-full">
       <BrowserRouter>
-      <AuthProvider>
+      <UserProvider>
         <Routes>
           <Route path="/" element={<LoginPage />} />
           <Route path="/chats" element={<ChatPage/>} />
         </Routes>
-        </AuthProvider>
+        </UserProvider>
       </BrowserRouter>
     </div>
   );
