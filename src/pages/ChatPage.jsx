@@ -3,33 +3,18 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUser } from '../context/UserContext';
 import PubNub from 'pubnub';
-import MessageBubble from '../components/MessageBubble';
-import ChatInput from '../components/ChatInput';
 
 export default function ChatPage() {
     const [messages, setMessages] = useState([]);
-    const [onlineUsers, setOnlineUsers] = useState(new Set());
-    const [isTyping, setIsTyping] = useState({});
-    const [activeChat, setActiveChat] = useState(null);
+    const [inputMessage, setInputMessage] = useState('');
+    const [onlineUsers, setOnlineUsers] = useState([]);
+    const [allUsers, setAllUsers] = useState([]);
+    const [activeChat, setActiveChat] = useState('global');
+    const [showAllUsers, setShowAllUsers] = useState(false);
     const messagesEndRef = useRef(null);
-    const typingTimeoutRef = useRef({});
-    const { user, logout } = useUser();
+    const { user, setUser } = useUser();
     const navigate = useNavigate();
-
-    const pubnub = new PubNub({
-        publishKey: 'pub-c-ffe1f819-f3a1-4a89-a787-3d0ece760468',
-        subscribeKey: 'sub-c-3da15639-dfb5-4f48-b345-a08fe215a9c8',
-        userId: user?.email
-    });
-
-    const getPersonalChannel = (user1, user2) => {
-        const sortedEmails = [user1, user2].sort();
-        return `personal_${sortedEmails[0]}_${sortedEmails[1]}`;
-    };
-
-    const scrollToBottom = () => {
-        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-    };
+    const pubnubRef = useRef(null);
 
     useEffect(() => {
         if (!user) {
@@ -37,183 +22,168 @@ export default function ChatPage() {
             return;
         }
 
-        const channels = ['chat', user.email];
-        if (activeChat) {
-            channels.push(getPersonalChannel(user.email, activeChat));
-        }
-
-        pubnub.subscribe({
-            channels: channels,
-            withPresence: true
+        pubnubRef.current = new PubNub({
+            publishKey: 'pub-c-ffe1f819-f3a1-4a89-a787-3d0ece760468',
+            subscribeKey: 'sub-c-3da15639-dfb5-4f48-b345-a08fe215a9c8',
+            userId: user.email
         });
 
-        const listener = {
-            message: (event) => {
-                setMessages(prev => [...prev, event.message]);
-                scrollToBottom();
-            },
-            presence: (event) => {
-                if (event.action === 'join') {
-                    setOnlineUsers(prev => new Set([...prev, event.uuid]));
-                } else if (event.action === 'leave' || event.action === 'timeout') {
-                    setOnlineUsers(prev => {
-                        const newSet = new Set(prev);
-                        newSet.delete(event.uuid);
-                        return newSet;
-                    });
-                }
-            },
-            signal: (event) => {
-                if (event.message.action === 'typing') {
-                    const typingUser = event.message.user;
-                    setIsTyping(prev => ({ ...prev, [typingUser]: true }));
+        const channels = ['global', user.email];
+        pubnubRef.current.subscribe({ channels });
 
-                    if (typingTimeoutRef.current[typingUser]) {
-                        clearTimeout(typingTimeoutRef.current[typingUser]);
-                    }
-                    typingTimeoutRef.current[typingUser] = setTimeout(() => {
-                        setIsTyping(prev => {
-                            const newState = { ...prev };
-                            delete newState[typingUser];
-                            return newState;
-                        });
-                    }, 1500);
-                }
-            }
-        };
+        pubnubRef.current.addListener({
+            message: handleMessage,
+            presence: handlePresence
+        });
 
-        pubnub.addListener(listener);
-
-        pubnub.hereNow(
-            {
-                channels: ['chat'],
-                includeUUIDs: true,
-            },
+        pubnubRef.current.hereNow(
+            { channels: ['global'] },
             (status, response) => {
                 if (response) {
-                    const users = new Set(response.channels.chat.occupants.map(occupant => occupant.uuid));
-                    setOnlineUsers(users);
+                    const users = response.channels.global.occupants.map(occupant => occupant.uuid);
+                    setOnlineUsers(users.filter(u => u !== user.email));
                 }
             }
         );
 
-        const loadMessages = () => {
-            const channel = activeChat ? getPersonalChannel(user.email, activeChat) : 'chat';
-            pubnub.history(
-                { channel: channel, count: 50 },
-                (status, response) => {
-                    if (response && response.messages) {
-                        setMessages(response.messages.map(m => m.entry));
-                        scrollToBottom();
-                    }
-                }
-            );
-        };
-
-        loadMessages();
+        // Fetch all users (this is a mock function, replace with your actual user fetching logic)
+        fetchAllUsers();
 
         return () => {
-            pubnub.removeListener(listener);
-            pubnub.unsubscribe({ channels: channels });
-            Object.values(typingTimeoutRef.current).forEach(timeout => clearTimeout(timeout));
+            if (pubnubRef.current) {
+                pubnubRef.current.unsubscribe({ channels });
+                pubnubRef.current.removeListener({
+                    message: handleMessage,
+                    presence: handlePresence
+                });
+            }
         };
-    }, [user, navigate, pubnub, activeChat]);
+    }, [user, navigate]);
 
-    const handleSendMessage = (messageText) => {
-        const channel = activeChat ? getPersonalChannel(user.email, activeChat) : 'chat';
-        
-        const messageData = {
-            text: messageText,
+    const fetchAllUsers = () => {
+        // This is a mock function. Replace this with your actual logic to fetch all users.
+        // For example, you might make an API call to your backend to get all registered users.
+        const mockUsers = ['user1@example.com', 'user2@example.com', 'user3@example.com'];
+        setAllUsers(mockUsers.filter(u => u !== user.email));
+    };
+
+    const handleMessage = (event) => {
+        const message = event.message;
+        setMessages(prevMessages => [...prevMessages, message]);
+        scrollToBottom();
+    };
+
+    const handlePresence = (event) => {
+        if (event.action === 'join') {
+            setOnlineUsers(prevUsers => [...new Set([...prevUsers, event.uuid])]);
+        } else if (event.action === 'leave' || event.action === 'timeout') {
+            setOnlineUsers(prevUsers => prevUsers.filter(user => user !== event.uuid));
+        }
+    };
+
+    const scrollToBottom = () => {
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    };
+
+    const sendMessage = () => {
+        if (inputMessage.trim() === '') return;
+
+        const messageObject = {
+            text: inputMessage,
             sender: user.email,
-            senderName: user.name,
-            timestamp: Date.now()
+            timestamp: new Date().toISOString()
         };
 
-        pubnub.publish({
-            channel,
-            message: messageData
+        pubnubRef.current.publish({
+            channel: activeChat,
+            message: messageObject
+        }, (status, response) => {
+            if (status.error) {
+                console.error("Error sending message:", status);
+            } else {
+                setInputMessage('');
+            }
         });
-    };
-
-    const handleTyping = () => {
-        const channel = activeChat ? getPersonalChannel(user.email, activeChat) : 'chat';
-        pubnub.signal({
-            channel: channel,
-            message: { action: 'typing', user: user.email }
-        });
-    };
-
-    const handleLogout = () => {
-        logout();
-        navigate('/');
     };
 
     const startPersonalChat = (recipientEmail) => {
-        setActiveChat(recipientEmail);
-        setMessages([]);  // Clear messages when switching chats
+        const personalChannel = [user.email, recipientEmail].sort().join('_');
+        setActiveChat(personalChannel);
+        pubnubRef.current.subscribe({ channels: [personalChannel] });
+        setMessages([]);
+    };
+
+    const handleLogout = () => {
+        setUser(null);
+        navigate('/');
     };
 
     return (
-        <div className="flex flex-col h-screen bg-gray-100">
-            {/* Header */}
-            <div className="bg-blue-600 text-white p-4 flex justify-between items-center">
-                <h1 className="text-2xl font-bold">Messenger</h1>
-                <div className="flex items-center">
-                    <span className="mr-4">{user.email}</span>
-                    <button
-                        onClick={handleLogout}
-                        className="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded"
-                    >
-                        Logout
-                    </button>
+        <div className="flex flex-col h-screen">
+            <div className="bg-blue-600 p-4 text-white flex justify-between items-center">
+                <h1 className="text-2xl font-bold">Chat App</h1>
+                <div>
+                    <span className="mr-4">{user?.email}</span>
+                    <button onClick={handleLogout} className="bg-red-500 px-4 py-2 rounded">Logout</button>
                 </div>
             </div>
-
-            {/* Main content */}
             <div className="flex flex-1 overflow-hidden">
-                {/* Sidebar */}
-                <div className="w-1/4 bg-white border-r border-gray-200 p-4 overflow-y-auto">
-                    <h2 className="text-xl font-semibold mb-4">Online Users</h2>
+                <div className="w-1/4 bg-gray-100 p-4 overflow-y-auto">
+                    <h2 className="font-bold mb-2">Chats</h2>
+                    <button 
+                        onClick={() => setShowAllUsers(!showAllUsers)}
+                        className="mb-4 bg-blue-500 text-white px-4 py-2 rounded w-full"
+                    >
+                        {showAllUsers ? "Show Online Users" : "Show All Users"}
+                    </button>
                     <ul>
-                        {Array.from(onlineUsers).map((userEmail) => (
-                            <li key={userEmail} className="py-2">
-                                <button
+                        <li className="mb-2">
+                            <button 
+                                onClick={() => {
+                                    setActiveChat('global');
+                                    setMessages([]);
+                                }}
+                                className={`text-blue-500 hover:underline ${activeChat === 'global' ? 'font-bold' : ''}`}
+                            >
+                                Global Chat
+                            </button>
+                        </li>
+                        {(showAllUsers ? allUsers : onlineUsers).map((userEmail) => (
+                            <li key={userEmail} className="mb-2">
+                                <button 
                                     onClick={() => startPersonalChat(userEmail)}
-                                    className="text-blue-600 hover:text-blue-700"
+                                    className={`text-blue-500 hover:underline ${activeChat.includes(userEmail) ? 'font-bold' : ''}`}
                                 >
-                                    {userEmail}
+                                    {userEmail} {!showAllUsers && "(Online)"}
                                 </button>
                             </li>
                         ))}
                     </ul>
                 </div>
-
-                {/* Chat area */}
-                <div className="w-3/4 flex flex-col">
-                    <div className="p-4 border-b border-gray-200">
-                        <h2 className="text-xl font-semibold">
-                            {activeChat ? `Chat with ${activeChat}` : 'Public Chat'}
-                        </h2>
+                <div className="flex-1 flex flex-col">
+                    <div className="p-2 bg-gray-200 font-bold">
+                        {activeChat === 'global' ? 'Global Chat' : `Chat with ${activeChat.replace(user.email, '').replace('_', '')}`}
                     </div>
-                    <div className="flex-1 overflow-y-auto p-4">
+                    <div className="flex-1 p-4 overflow-y-auto">
                         {messages.map((message, index) => (
-                            <MessageBubble
-                                key={index}
-                                message={message.text}
-                                isOwnMessage={message.sender === user.email}
-                                senderName={message.senderName}
-                                timestamp={message.timestamp}
-                            />
-                        ))}
-                        {Object.keys(isTyping).map((userEmail, index) => (
-                            <div key={index} className="text-gray-500 text-sm">
-                                {userEmail} is typing...
+                            <div key={index} className={`mb-2 ${message.sender === user.email ? 'text-right' : 'text-left'}`}>
+                                <span className={`inline-block p-2 rounded ${message.sender === user.email ? 'bg-blue-100' : 'bg-gray-100'}`}>
+                                    <strong>{message.sender}: </strong>
+                                    {message.text}
+                                </span>
                             </div>
                         ))}
                         <div ref={messagesEndRef} />
                     </div>
-                    <div className="border-t border-gray-200">
-                        <ChatInput onSendMessage={handleSendMessage} onTyping={handleTyping} />
+                    <div className="p-4 border-t">
+                        <input 
+                            type="text" 
+                            value={inputMessage}
+                            onChange={(e) => setInputMessage(e.target.value)}
+                            onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
+                            className ="w-full px-3 py-2 border rounded"
+                            placeholder="Type a message..."
+                        />
                     </div>
                 </div>
             </div>
