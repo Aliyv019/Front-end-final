@@ -3,12 +3,12 @@ import React, { createContext, useContext, useState } from 'react';
 
 const UserContext = createContext();
 
-export const useUser  = () => {
+export const useUser = () => {
     return useContext(UserContext);
 }
 
 export const UserProvider = ({ children }) => {
-    const [user, setUser ] = useState(null);
+    const [user, setUser] = useState(null);
     const [authError, setAuthError] = useState(null);
 
     const login = (email, password) => {
@@ -19,25 +19,25 @@ export const UserProvider = ({ children }) => {
         }
 
         // Mock user data
-        const mockUser Data = {
+        const mockUser = {
             email,
             name: email.split('@')[0], // Use the part before '@' as the name
             avatar: 'https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y',
         };
 
-        setUser (mockUser Data);
+        setUser(mockUser);
         setAuthError(null);
         return true;
     };
 
     const logout = () => {
-        setUser (null);
+        setUser(null);
         setAuthError(null);
     };
 
     return (
-        <User Context.Provider value={{ user, login, logout, authError }}>
+        <UserContext.Provider value={{ user, login, logout, authError }}>
             {children}
-        </User Context.Provider>
+        </UserContext.Provider>
     );
 };
