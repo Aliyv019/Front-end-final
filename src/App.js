@@ -8,7 +8,7 @@ function App() {
   return (
     <div className="App">
       <BrowserRouter>
-        <UserProvider>
+        <UserProvider Provider>
           <Routes>
             <Route path="/" element={<LoginPage />} />
             <Route path="/chats" element={<ChatPage />} />
