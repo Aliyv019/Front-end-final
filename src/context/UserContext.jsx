@@ -12,20 +12,15 @@ export const UserProvider = ({ children }) => {
     const [authError, setAuthError] = useState(null);
 
     const login = (email, password) => {
-        // Mock user authentication logic
         if (password.length < 6) {
             setAuthError("Password must be at least 6 characters");
             return false;
         }
-
-        // Mock user data
-        const mockUser = {
-            email,
-            name: email.split('@')[0], // Use the part before '@' as the name
-            avatar: 'https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y',
-        };
-
-        setUser(mockUser);
+        setUser({ 
+            email, 
+            name: email.split('@')[0],
+            avatar: 'https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y' 
+        });
         setAuthError(null);
         return true;
     };

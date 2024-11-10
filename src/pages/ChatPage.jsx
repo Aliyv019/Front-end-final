@@ -78,19 +78,21 @@ export default function ChatPage() {
 
     const sendMessage = () => {
         if (inputMessage.trim() === '') return;
-
+    
         const messageObject = {
             text: inputMessage,
             sender: user.email,
-            timestamp: new Date().toISOString(),
+            timestamp: new Date().toISOString()
         };
-
+    
+        console.log("Sending message:", messageObject); // Debugging line
+    
         pubnubRef.current.publish({
             channel: activeChat,
-            message: messageObject,
-        }, (status) => {
+            message: messageObject
+        }, (status, response) => {
             if (status.error) {
-                console.error('Error sending message:', status);
+                console.error("Error sending message:", status);
             } else {
                 setInputMessage('');
             }
