@@ -47,15 +47,6 @@ export default function ChatPage() {
     };
   }, [user, navigate]);
 
-                                  useEffect(()=>{
-                                    const fetchData= async ()=>{
-                                      const querySnapshot = await getDocs(collection(db, "messages"));
-                                      setMessages(querySnapshot.docs.map((doc) => doc.data()));
-                                    }
-                                    fetchData();
-                                    
-                                    console.log(messages);
-                                  },[])
   const fetchAllUsers = () => {
     const mockUsers = [
       "user1@example.com",
@@ -65,25 +56,55 @@ export default function ChatPage() {
     setAllUsers(mockUsers.filter((u) => u !== user.email));
   };
 
-  const handleMessage = (event) => {
+  const handleMessage = async (event) => {
     const message = event.message;
     setMessages((prevMessages) => {
       const updatedMessages = {
         ...prevMessages,
         [event.channel]: [...(prevMessages[event.channel] || []), message],
       };
-      localStorage.setItem("chatMessages", JSON.stringify(updatedMessages));
       return updatedMessages;
     });
+
+    // Store the message in Firestore
+    await addDoc(collection(db, "messages"), {
+      channel: event.channel,
+      text: message.text,
+      sender: message.sender,
+      timestamp: new Date().toISOString(),
+    });
+
     scrollToBottom();
   };
 
-  // Load messages from local storage when the component mounts
+  // Load messages from Firestore when the component mounts
+  const getmessages = async (channel) => {
+    const querySnapshot = await getDocs(collection(db, "messages"));
+    const allMessages = {};
+    querySnapshot.forEach((doc) => {
+      const data = doc.data();
+      if (!allMessages[data.channel]) {
+        allMessages[data.channel] = [];
+      }
+      allMessages[data.channel].push(data);
+    });
+    setMessages(allMessages);
+  };
   useEffect(() => {
-    const savedMessages = localStorage.getItem("chatMessages");
-    if (savedMessages) {
-      setMessages(JSON.parse(savedMessages));
-    }
+    const fetchMessages = async () => {
+      const querySnapshot = await getDocs(collection(db, "messages"));
+      const allMessages = {};
+      querySnapshot.forEach((doc) => {
+        const data = doc.data();
+        if (!allMessages[data.channel]) {
+          allMessages[data.channel] = [];
+        }
+        allMessages[data.channel].push(data);
+      });
+      setMessages(allMessages);
+    };
+    fetchMessages();
+    console.log("Messages:", messages);
   }, []);
 
   const handlePresence = (event) => {
@@ -122,7 +143,7 @@ export default function ChatPage() {
   const startPersonalChat = (recipientEmail) => {
     const personalChannel = [user.email, recipientEmail].sort().join("_");
     setActiveChat(personalChannel);
-    setMessages([]);
+    getmessages();
     pubnubRef.current.subscribe({ channels: [personalChannel] });
   };
 
@@ -146,6 +167,7 @@ export default function ChatPage() {
             onClick={() => {
               setActiveChat("global");
               pubnubRef.current.subscribe({ channels: ["global"] });
+              getmessages();
             }}
             className="mb-2 text-blue-500 hover:underline"
           >
