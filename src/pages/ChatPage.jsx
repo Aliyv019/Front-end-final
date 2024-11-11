@@ -49,33 +49,42 @@ export default function ChatPage() {
 
   const fetchAllUsers = () => {
     const mockUsers = [
-      "user1@example.com",
-      "user2@example.com",
-      "user3@example.com",
+      "gecenyx@gmail.com",
+      "tahiraliyev2006@gmail.com",
+      "mceferov@gmail.com",
     ];
     setAllUsers(mockUsers.filter((u) => u !== user.email));
   };
 
   const handleMessage = async (event) => {
-    const message = event.message;
-    setMessages((prevMessages) => {
+  const message = event.message;
+  
+  setMessages((prevMessages) => {
+    const channelMessages = prevMessages[event.channel] || [];
+    
+    // Check if the message already exists
+    if (!channelMessages.some(msg => msg.timestamp === message.timestamp)) {
       const updatedMessages = {
         ...prevMessages,
-        [event.channel]: [...(prevMessages[event.channel] || []), message],
+        [event.channel]: [...channelMessages, message],
       };
       return updatedMessages;
-    });
+    }
+    
+    // If the message already exists, return the previous state
+    return prevMessages;
+  });
 
-    // Store the message in Firestore
-    await addDoc(collection(db, "messages"), {
-      channel: event.channel,
-      text: message.text,
-      sender: message.sender,
-      timestamp: new Date().toISOString(),
-    });
+  // Store the message in Firestore
+  await addDoc(collection(db, "messages"), {
+    channel: event.channel,
+    text: message.text,
+    sender: message.sender,
+    timestamp: new Date().toISOString(),
+  });
 
-    scrollToBottom();
-  };
+  scrollToBottom();
+};
 
   // Load messages from Firestore when the component mounts
   const getmessages = async (channel) => {
@@ -88,7 +97,6 @@ export default function ChatPage() {
       }
       allMessages[data.channel].push(data);
     });
-    setMessages(allMessages);
   };
   useEffect(() => {
     const fetchMessages = async () => {
@@ -101,7 +109,6 @@ export default function ChatPage() {
         }
         allMessages[data.channel].push(data);
       });
-      setMessages(allMessages);
     };
     fetchMessages();
     console.log("Messages:", messages);
@@ -142,9 +149,16 @@ export default function ChatPage() {
 
   const startPersonalChat = (recipientEmail) => {
     const personalChannel = [user.email, recipientEmail].sort().join("_");
+    
+    // Unsubscribe from the previous active chat channel
+    if (activeChat !== "global") {
+        pubnubRef.current.unsubscribe({ channels: [activeChat] });
+    }
+
     setActiveChat(personalChannel);
     getmessages();
     pubnubRef.current.subscribe({ channels: [personalChannel] });
+    
   };
 
   const handleLogout = () => {
