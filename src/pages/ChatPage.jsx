@@ -5,7 +5,7 @@ import { useUser } from "../context/UserContext";
 import PubNub from "pubnub";
 
 export default function ChatPage() {
-  const [messages, setMessages] = useState([]);
+  const [messages, setMessages] = useState({});
   const [inputMessage, setInputMessage] = useState("");
   const [allUsers, setAllUsers] = useState([]);
   const [activeChat, setActiveChat] = useState("global");
@@ -57,7 +57,10 @@ export default function ChatPage() {
   const handleMessage = (event) => {
     const message = event.message;
     setMessages((prevMessages) => {
-      const updatedMessages = [...prevMessages, message];
+      const updatedMessages = {
+        ...prevMessages,
+        [event.channel]: [...(prevMessages[event.channel] || []), message],
+      };
       localStorage.setItem("chatMessages", JSON.stringify(updatedMessages));
       return updatedMessages;
     });
@@ -104,6 +107,7 @@ export default function ChatPage() {
     );
   };
 
+
   const startPersonalChat = (recipientEmail) => {
     const personalChannel = [user.email, recipientEmail].sort().join("_");
     setActiveChat(personalChannel);
@@ -127,6 +131,15 @@ export default function ChatPage() {
       <div className="flex flex-1 overflow-hidden">
         <div className="w-1/4 bg-gray-100 p-4 overflow-y-auto">
           <h2 className="font-bold mb-2">Users</h2>
+          <button
+            onClick={() => {
+              setActiveChat("global");
+              pubnubRef.current.subscribe({ channels: ["global"] });
+            }}
+            className="mb-2 text-blue-500 hover:underline"
+          >
+            Global Chat
+          </button>
           <ul>
             {allUsers.map((userEmail) => (
               <li key={userEmail} className="mb-2">
@@ -147,7 +160,7 @@ export default function ChatPage() {
           </div>
           <div className="flex-1 overflow-y-auto">
             <div className="mb-4">
-              {messages.map((msg, index) => (
+              {messages[activeChat]?.map((msg, index) => (
                 <div
                   key={index}
                   className={`mb-2 ${
