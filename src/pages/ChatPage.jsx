@@ -3,6 +3,8 @@ import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useUser } from "../context/UserContext";
 import PubNub from "pubnub";
+import {db} from "../components/firebase";
+import { addDoc, getDocs, collection } from "firebase/firestore";
 
 export default function ChatPage() {
   const [messages, setMessages] = useState({});
@@ -45,6 +47,15 @@ export default function ChatPage() {
     };
   }, [user, navigate]);
 
+                                  useEffect(()=>{
+                                    const fetchData= async ()=>{
+                                      const querySnapshot = await getDocs(collection(db, "messages"));
+                                      setMessages(querySnapshot.docs.map((doc) => doc.data()));
+                                    }
+                                    fetchData();
+                                    
+                                    console.log(messages);
+                                  },[])
   const fetchAllUsers = () => {
     const mockUsers = [
       "user1@example.com",
