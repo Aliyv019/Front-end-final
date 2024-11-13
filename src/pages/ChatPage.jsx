@@ -10,7 +10,7 @@ export default function ChatPage() {
   const [messages, setMessages] = useState({});
   const [inputMessage, setInputMessage] = useState("");
   const [allUsers, setAllUsers] = useState([]);
-  const [activeChat, setActiveChat] = useState("global");
+  const [activeChat, setActiveChat] = useState("none");
   const messagesEndRef = useRef(null);
   const { user, setUser } = useUser();
   const navigate = useNavigate();
@@ -151,7 +151,7 @@ export default function ChatPage() {
     const personalChannel = [user.email, recipientEmail].sort().join("_");
 
     // Unsubscribe from the previous active chat channel
-    if (activeChat !== "global") {
+    if (activeChat !== "global"||"none") {
       pubnubRef.current.unsubscribe({ channels: [activeChat] });
     }
 
@@ -167,88 +167,56 @@ export default function ChatPage() {
 
   return (
     <div className="flex flex-col h-screen">
-      <div className="bg-blue-600 p-4 text-white flex justify-between items-center">
-        <h1 className="text-2xl font-bold">Messenger</h1>
-        <button onClick={handleLogout} className="bg-red-500 px-4 py-2 rounded">
-          Logout
-        </button>
-      </div>
-      <div className="flex flex-1 overflow-hidden">
-        <div className="w-1/4 bg-gray-100 p-4 overflow-y-auto">
-          <h2 className="font-bold mb-2">Users</h2>
-          <button
-            onClick={() => {
-              setActiveChat("global");
-              pubnubRef.current.subscribe({ channels: ["global"] });
-              getmessages();
-            }}
-            className="mb-2 text-blue-500 hover:underline"
-          >
-            Global Chat
-          </button>
-          <ul>
-            {allUsers.map((userEmail) => (
-              <li key={userEmail} className="mb-2">
-                <button
-                  onClick={() => startPersonalChat(userEmail)}
-                  className={`text-blue-500 hover:underline`}
-                >
-                  {userEmail}
-                </button>
-              </li>
-            ))}
-          </ul>
-        </div>
-        <div className="flex-1 bg-white p-4 flex flex-col">
-          <div className="text-lg font-bold mb-2">
-            Chatting with:{" "}
-            {activeChat.split("_").find((email) => email !== user.email)}
-          </div>
-          <div className="flex-1 overflow-y-auto">
-            <div className="mb-4">
-              {messages[activeChat]?.map((msg, index) => (
-                <div
-                  key={index}
-                  className={`mb-2 ${
-                    msg.sender === user.email ? "text-right" : "text -left"
-                  }`}
-                >
-                  <div
-                    className={`inline-block p-2 rounded ${
-                      msg.sender === user.email
-                        ? "bg-blue-500 text-white"
-                        : "bg-gray-300"
-                    }`}
-                  >
-                    <strong>{msg.sender.split("@")[0]}:</strong> {msg.text}
-                  </div>
-                </div>
-              ))}
-              <div ref={messagesEndRef} />
+        <div className="bg-blue-600 p-4 text-white fixed w-full z-10">
+            <div className="flex justify-between items-center">
+                <h1 className="text-2xl font-bold">Messenger</h1>
+                <button onClick={handleLogout} className="bg-red-500 px-4 py-2 rounded">Logout</button>
             </div>
-          </div>
-          <div className="flex mt-4">
-            <input
-              type="text"
-              value={inputMessage}
-              onChange={(e) => setInputMessage(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  sendMessage();
-                }
-              }}
-              className="flex-1 border rounded p-2"
-              placeholder="Type your message..."
-            />
-            <button
-              onClick={sendMessage}
-              className="bg-blue-500 text-white px-4 py-2 rounded ml-2"
-            >
-              Send
-            </button>
-          </div>
         </div>
-      </div>
+        <div className="flex flex-1 mt-16">
+            {/* Chat List - Always visible on wider screens and visible on mobile when no chat is selected */}
+            <div className={`w-full md:w-1/4 bg-gray-100 p-4 overflow-y-auto transition-all duration-300 ${activeChat !== "none" && window.innerWidth < 640 ? "hidden" : "block"}`}>
+                <h2 className="text-lg font-semibold">Chats</h2>
+                <ul>
+                    <li className="p-2 hover:bg-gray-200 cursor-pointer" onClick={() => setActiveChat("global")}>
+                        Global Chat
+                    </li>
+                    {allUsers.map((userEmail) => (
+                        <li key={userEmail} className="p-2 hover:bg-gray-200 cursor-pointer" onClick={() => startPersonalChat(userEmail)}>
+                            {userEmail}
+                        </li>
+                    ))}
+                </ul>
+            </div>
+
+            {/* Chat Area - Always visible when a chat is selected */}
+            <div className={`flex-1 p-4 flex justify-between flex-col ${activeChat !== "none" ? "block" : "hidden"} md:flex`}>
+                <div className="flex items-center justify-between mb-2">
+                    <button onClick={() => setActiveChat("none")} className="bg-gray-300 text-black px-2 py-1 rounded md:hidden">Back</button>
+                    <h2 className="text-xl font-semibold">Chat: {activeChat.split("_").map((user)=>user.split("@")[0]).join(" and ")}</h2>
+                </div>
+                <div className="flex-1 overflow-y-auto mb-4">
+                    {messages[activeChat]?.map((msg, index) => (
+                        <div key={index} className={`my-2 ${msg.sender === user.email ? 'text-right' : 'text-left'}`}>
+                            <div className={`inline-block p-2 rounded ${msg.sender === user.email ? 'bg-blue-500 text-white' : 'bg-gray-300'}`}>
+                                <strong>{msg.sender.split("@")[0]}: </strong>{msg.text}
+                            </div>
+                        </div>
+                    ))}
+                    <div ref={messagesEndRef} />
+                </div>
+                <div className="flex mt-4">
+                    <input
+                        type="text"
+                        value={inputMessage}
+                        onChange={(e) => setInputMessage(e.target.value)}
+                        className="flex-1 border rounded p-2"
+                        placeholder="Type a message..."
+                    />
+                    <button onClick={sendMessage} className="bg-blue-600 text-white px-4 py-2 rounded ml-2">Send</button>
+                </div>
+            </div>
+        </div>
     </div>
-  );
+);
 }
