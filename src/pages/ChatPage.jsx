@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useUser } from "../context/UserContext";
 import PubNub from "pubnub";
-import {db} from "../components/firebase";
+import { db } from "../components/firebase";
 import { addDoc, getDocs, collection } from "firebase/firestore";
 
 export default function ChatPage() {
@@ -21,27 +21,26 @@ export default function ChatPage() {
       navigate("/");
       return;
     }
-  
+
     pubnubRef.current = new PubNub({
       publishKey: "pub-c-ffe1f819-f3a1-4a89-a787-3d0ece760468",
       subscribeKey: "sub-c-3da15639-dfb5-4f48-b345-a08fe215a9c8",
       userId: user.email,
     });
-  
+
     const channels = ["global", user.email];
     pubnubRef.current.subscribe({ channels });
-  
+
     pubnubRef.current.addListener({
-      message: handleMessage
+      message: handleMessage,
     });
-  
+
     fetchAllUsers();
-  
+
     return () => {
       pubnubRef.current.unsubscribe({ channels });
       pubnubRef.current.removeListener({
-        message: handleMessage
-
+        message: handleMessage,
       });
     };
   }, [user, navigate]);
@@ -57,40 +56,29 @@ export default function ChatPage() {
 
   const handleMessage = async (event) => {
     const message = event.message;
-  
+
+    // Check if the message already exists in the local state
     setMessages((prevMessages) => {
       const channelMessages = prevMessages[event.channel] || [];
-  
-      // Check if the message already exists in the current state
-      if (!channelMessages.some(msg => msg.timestamp === message.timestamp)) {
+
+      // Check for duplicates in local state
+      if (
+        !channelMessages.some(
+          (msg) =>
+            msg.timestamp === message.timestamp && msg.text === message.text
+        )
+      ) {
         const updatedMessages = {
           ...prevMessages,
           [event.channel]: [...channelMessages, message],
         };
         return updatedMessages;
       }
-  
-      // If the message already exists, return the previous state
-      return prevMessages;
+
+      return prevMessages; // Return previous state if duplicate found
     });
-  
-    // Check if the message already exists in Firestore
-    const querySnapshot = await getDocs(collection(db, "messages"));
-    const isDuplicate = querySnapshot.docs.some(doc => {
-      const data = doc.data();
-      return data.channel === event.channel && data.text === message.text && data.sender === message.sender;
-    });
-  
-    // Only add the message to Firestore if it's not a duplicate
-    if (!isDuplicate) {
-      await addDoc(collection(db, "messages"), {
-        channel: event.channel,
-        text: message.text,
-        sender: message.sender,
-        timestamp: message.timestamp, // Use the original timestamp from the message
-      });
-    }
-  
+
+    // No need to check Firestore here since we already saved the message when sending
     scrollToBottom();
   };
 
@@ -123,21 +111,27 @@ export default function ChatPage() {
     fetchMessages();
   }, []);
 
-  
-
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
-  const sendMessage = () => {
+  const sendMessage = async () => {
     if (inputMessage.trim() === "") return;
-  
+
     const messageObject = {
       text: inputMessage,
       sender: user.email,
       timestamp: new Date().toISOString(), // This timestamp is generated when sending
     };
-  
+
+    // Save the message to Firestore immediately when sending
+    await addDoc(collection(db, "messages"), {
+      channel: activeChat,
+      text: messageObject.text,
+      sender: messageObject.sender,
+      timestamp: messageObject.timestamp,
+    });
+
     pubnubRef.current.publish(
       {
         channel: activeChat,
@@ -153,19 +147,17 @@ export default function ChatPage() {
     );
   };
 
-
   const startPersonalChat = (recipientEmail) => {
     const personalChannel = [user.email, recipientEmail].sort().join("_");
-    
-    // // Unsubscribe from the previous active chat channel
-    // if (activeChat !== "global") {
-    //     pubnubRef.current.unsubscribe({ channels: [activeChat] });
-    // }
+
+    // Unsubscribe from the previous active chat channel
+    if (activeChat !== "global") {
+      pubnubRef.current.unsubscribe({ channels: [activeChat] });
+    }
 
     setActiveChat(personalChannel);
     getmessages();
-    // pubnubRef.current.subscribe({ channels: [personalChannel] });
-    
+    pubnubRef.current.subscribe({ channels: [personalChannel] });
   };
 
   const handleLogout = () => {
@@ -187,7 +179,7 @@ export default function ChatPage() {
           <button
             onClick={() => {
               setActiveChat("global");
-              // pubnubRef.current.subscribe({ channels: ["global"] });
+              pubnubRef.current.subscribe({ channels: ["global"] });
               getmessages();
             }}
             className="mb-2 text-blue-500 hover:underline"
