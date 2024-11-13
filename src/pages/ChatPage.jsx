@@ -210,6 +210,7 @@ export default function ChatPage() {
                         type="text"
                         value={inputMessage}
                         onChange={(e) => setInputMessage(e.target.value)}
+                        {...(activeChat === "none" ? { disabled: true } : {})}
                         className="flex-1 border rounded p-2"
                         placeholder="Type a message..."
                     />
