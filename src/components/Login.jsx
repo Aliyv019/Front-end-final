@@ -11,7 +11,11 @@ export default function Login() {
 
     const handleLogin = (e) => {
         e.preventDefault();
+        setEmail(email);
+        setPassword(password);
         if (login(email, password)) {
+            console.log('Login successful');
+            
             navigate('/chats');
         }
     };
