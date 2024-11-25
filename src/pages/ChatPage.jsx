@@ -8,6 +8,7 @@ import { addDoc, getDocs, collection } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage"; // Import these functions
 import { storage } from "../components/firebase"; // Import storage
 
+import paperclip from "../assets/icons/file.svg"
 
 export default function ChatPage() {
   const [messages, setMessages] = useState({});
@@ -99,14 +100,9 @@ export default function ChatPage() {
   };
   const handleDrop = (e) => {
     e.preventDefault();
-    if (!user) {
-      console.error("User  is not authenticated. Cannot upload files.");
-      return; // Prevent file upload if user is not authenticated
-    }
-    
     const files = Array.from(e.dataTransfer.files);
     files.forEach((file) => {
-      sendFile(file); // Call the updated sendFile function
+      sendFile(file); // Call the sendFile function for each file dropped
     });
   };
 
@@ -116,16 +112,16 @@ export default function ChatPage() {
       sender: user.email,
       timestamp: new Date().toISOString(),
     };
-  
+
     // Create a storage reference
     const storageRef = ref(storage, `files/${file.name}`); // Assuming 'storage' is your Firebase Storage instance
-  
+
     // Upload the file
     await uploadBytes(storageRef, file);
-    
+
     // Get the file's download URL
     const fileURL = await getDownloadURL(storageRef);
-  
+
     // Save the message to Firestore with the file URL
     await addDoc(collection(db, "messages"), {
       channel: activeChat,
@@ -134,7 +130,7 @@ export default function ChatPage() {
       timestamp: messageObject.timestamp,
       file: fileURL, // Store the file URL
     });
-  
+
     // Publish the message to PubNub
     pubnubRef.current.publish(
       {
@@ -225,7 +221,8 @@ export default function ChatPage() {
     <div
       className="flex flex-col h-screen"
       onDrop={handleDrop}
-      onDrag={(e) => e.preventDefault()}
+      onDragOver={(e) => e.preventDefault()} // Prevent default to allow drop
+      onDragEnter={(e) => e.preventDefault()}
     >
       <div className="bg-blue-600 p-4 text-white fixed w-full z-10">
         <div className="flex justify-between items-center">
@@ -289,27 +286,45 @@ export default function ChatPage() {
             </h2>
           </div>
           <div className="flex-1 overflow-y-auto mb-4">
-          {messages[activeChat]?.map((msg, index) => (
-  <div key={index} className={`my-2 ${msg.sender === user.email ? "text-right" : "text-left"}`}>
-    <div className={`inline-block p-2 rounded ${msg.sender === user.email ? "bg-blue-500 text-white" : "bg-gray-300"}`}>
-      <strong>{msg.sender.split("@")[0]}: </strong>
-      {msg.text}
-      {msg.file && (
-        <a
-          href={msg.file}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="block text-sm text-blue-600 underline"
-        >
-          Download {msg.text}
-        </a>
-      )}
-    </div>
-  </div>
-))}
+            {messages[activeChat]?.map((msg, index) => (
+              <div
+                key={index}
+                className={`my-2 ${
+                  msg.sender === user.email ? "text-right" : "text-left"
+                }`}
+              >
+                <div
+                  className={`inline-block p-2 rounded ${
+                    msg.sender === user.email
+                      ? "bg-blue-500 text-white"
+                      : "bg-gray-300"
+                  }`}
+                >
+                  <strong>{msg.sender.split("@")[0]}: </strong>
+                  {msg.text}
+                  {msg.file && (
+                    <a
+                      href={msg.file}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block text-sm text-blue-600 underline"
+                    >
+                      Download {msg.text}
+                    </a>
+                  )}
+                </div>
+              </div>
+            ))}
             <div ref={messagesEndRef} />
           </div>
           <div className="flex mt-4 p-2 border-t border-gray-300 bg-gray-50 rounded-lg shadow-md">
+            <button
+              
+              onClick={() => document.getElementById("fileInput").click()}
+              className="bg-blue-600 text-white px-4 py-2 rounded-full hover:bg-blue-700 transition duration-300"
+            >
+              Add your file
+            </button>
             <input
               type="text"
               value={inputMessage}
@@ -323,6 +338,18 @@ export default function ChatPage() {
               className="flex-1 border rounded-full p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="Type a message..."
             />
+
+            <input
+              type="file"
+              id="fileInput"
+              multiple
+              style={{ display: "none" }}
+              onChange={(e) => {
+                const files = Array.from(e.target.files);
+                files.forEach((file) => sendFile(file));
+              }}
+            />
+
             <button
               onClick={sendMessage}
               className="bg-blue-600 text-white px-4 py-2 rounded-full hover:bg-blue-700 transition duration-300"
