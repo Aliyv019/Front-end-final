@@ -6,16 +6,24 @@ import { useUser  } from '../context/UserContext';
 export default function Login() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const { login, authError } = useUser ();
+    const [isRegistering, setIsRegistering] = useState(false);
+    const { login, register, authError } = useUser ();
     const navigate = useNavigate();
 
-    const handleLogin = (e) => {
+    const handleLogin = async (e) => {
         e.preventDefault();
-        setEmail(email);
-        setPassword(password);
-        if (login(email, password)) {
+        const success = await login(email, password);
+        if (success) {
             console.log('Login successful');
-            
+            navigate('/chats');
+        }
+    };
+
+    const handleRegister = async (e) => {
+        e.preventDefault();
+        const success = await register(email, password);
+        if (success) {
+            console.log('Registration successful');
             navigate('/chats');
         }
     };
@@ -25,10 +33,10 @@ export default function Login() {
             <div className="max-w-md w-full space-y-8 bg-white p-8 rounded-xl shadow-lg">
                 <div>
                     <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-                        Welcome to Messenger
+                        {isRegistering ? "Register" : "Login"} to Messenger
                     </h2>
                 </div>
-                <form className="mt-8 space-y-6" onSubmit={handleLogin}>
+                <form className="mt-8 space-y-6" onSubmit={isRegistering ? handleRegister : handleLogin}>
                     {authError && (
                         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
                             <span className="block sm:inline">{authError}</span>
@@ -63,10 +71,18 @@ export default function Login() {
                             type="submit"
                             className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                         >
-                            Sign in
+                            {isRegistering ? "Register" : "Sign in"}
                         </button>
                     </div>
                 </form>
+                <div className="text-center">
+                    <button 
+                        onClick={() => setIsRegistering(!isRegistering)} 
+                        className="text-blue-600 hover:underline"
+                    >
+                        {isRegistering ? "Already have an account? Login" : "Don't have an account? Register"}
+                    </button>
+                </div>
             </div>
         </div>
     );
