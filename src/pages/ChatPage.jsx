@@ -8,7 +8,6 @@ import { addDoc, getDocs, collection } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage"; // Import these functions
 import { storage } from "../components/firebase"; // Import storage
 
-import paperclip from "../assets/icons/file.svg"
 
 export default function ChatPage() {
   const [messages, setMessages] = useState({});
@@ -286,7 +285,7 @@ export default function ChatPage() {
             </h2>
           </div>
           <div className="flex-1 overflow-y-auto mb-4">
-            {messages[activeChat]?.map((msg, index) => (
+            {messages[activeChat]?.reverse().map((msg, index) => (
               <div
                 key={index}
                 className={`my-2 ${
@@ -317,9 +316,8 @@ export default function ChatPage() {
             ))}
             <div ref={messagesEndRef} />
           </div>
-          <div className="flex mt-4 p-2 border-t border-gray-300 bg-gray-50 rounded-lg shadow-md">
+          <div className="flex mt-4 p-2 border-t border-gray-300 bg-gray-50 rounded-lg shadow-md gap-1">
             <button
-              
               onClick={() => document.getElementById("fileInput").click()}
               className="bg-blue-600 text-white px-4 py-2 rounded-full hover:bg-blue-700 transition duration-300"
             >
