@@ -292,7 +292,7 @@ export default function ChatPage() {
           } md:flex`}
         >
           <div
-            className={`flex items-center   mb-2 h-[74px] px-5 bg-[#F0F2F5] gap-4`}
+            className={`flex items-center h-[74px] px-5 bg-[#F0F2F5] gap-4`}
           >
             <div
               onClick={() => setActiveChat("none")}
@@ -311,7 +311,7 @@ export default function ChatPage() {
               </h2>
             </div>
           </div>
-          <div className="flex-1 overflow-y-auto mb-4 m-4">
+          <div className="flex-1 overflow-y-auto pt-4 mx-4">
             {messages[activeChat]?.map((msg, index) => (
               <div
                 key={index}
@@ -344,7 +344,7 @@ export default function ChatPage() {
           {/* Input Field */}
 
           <div
-            className={`flex mt-4 p-2 border-t justify-center bg-grey-custom shadow-md gap-1 ${
+            className={`flex p-2 border-t justify-center bg-grey-custom shadow-md gap-1 ${
               activeChat === "none" ? "hidden" : "block"
             }`}
           >
