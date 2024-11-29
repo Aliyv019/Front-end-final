@@ -252,18 +252,7 @@ export default function ChatPage() {
               <img src={logout} className="w-[30px]" />
             </div>
           </div>
-          <div className="flex items-center gap-2 px-[29px] py-[20px] relative border-b-[1px]">
-            <img
-              src={searchicon}
-              className=" pointer-events-none absolute left-[51px] "
-              alt=""
-            />
-            <input
-              type="text"
-              className="w-full px-[55px] py-[15px] border-none focus:outline-none rounded-[10px] bg-[#F0F2F5]"
-              placeholder={`Search or start new chat`}
-            />
-          </div>
+          
           <ul>
             <li
               className="p-2 hover:bg-gray-200 cursor-pointer flex items-center gap-2"
@@ -331,6 +320,7 @@ export default function ChatPage() {
                       {msg.sender.split("@")[0]}
                     </div>
                   )}
+                  <h2 className={` font-bold  ${msg.sender.split("@")[0]==user.email.split("@")[0] ? "text-[#075E54]":"text-[#25D366]"}`}>{activeChat === "global" ? msg.sender.split("@")[0]:""}</h2>
                   <div className="break-words mr-8">{msg.text}</div>
                   <div className={`text-xs text-[#111B21]  text-end`}>
                     {new Date(msg.timestamp).toLocaleTimeString().slice(0, 5)}
