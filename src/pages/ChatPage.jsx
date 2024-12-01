@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { useUser } from "../context/UserContext";
 import PubNub from "pubnub";
 import { db } from "../components/firebase";
-import { addDoc, getDocs, collection } from "firebase/firestore";
+import { addDoc, getDocs, collection, orderBy, query } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage"; // Import these functions
 import { storage } from "../components/firebase"; // Import storage
 
@@ -55,13 +55,24 @@ export default function ChatPage() {
     };
   }, [user, navigate]);
 
-  const fetchAllUsers = () => {
-    const mockUsers = [
-      "gecenyx@gmail.com",
-      "tahiraliyev2006@gmail.com",
-      "mceferov@gmail.com",
-    ];
-    setAllUsers(mockUsers.filter((u) => u !== user.email));
+  const fetchAllUsers = async () => {
+    try {
+      const usersSnapshot = await getDocs(collection(db, "users"));
+      const mockUsers = [];
+  
+      usersSnapshot.forEach((userDoc) => {
+        const userData = userDoc.data();
+        // Check if userData has an email field
+        if (userData.email) {
+          mockUsers.push(userData);
+        }
+      });
+  
+      // Assuming `user` is defined in the component scope
+      setAllUsers(mockUsers.filter((u) =>u.email !=user.email));
+    } catch (error) {
+      console.error("Error fetching users:", error);
+    }
   };
 
   const handleMessage = async (event) => {
@@ -154,7 +165,8 @@ export default function ChatPage() {
   };
   useEffect(() => {
     const fetchMessages = async () => {
-      const querySnapshot = await getDocs(collection(db, "messages"));
+      const messagesQuery=query(collection(db,"messages"), orderBy("timestamp"))
+      const querySnapshot = await getDocs(messagesQuery);
       const allMessages = {};
       querySnapshot.forEach((doc) => {
         const data = doc.data();
@@ -263,12 +275,12 @@ export default function ChatPage() {
             </li>
             {allUsers.map((userEmail) => (
               <li
-                key={userEmail}
+                key={userEmail.email}
                 className="p-2 hover:bg-gray-200 cursor-pointer flex items-center gap-2"
-                onClick={() => startPersonalChat(userEmail)}
+                onClick={() => startPersonalChat(userEmail.email)}
               >
                 <img src={default_pfp} className="w-[50px] rounded-full" alt="" />
-                {userEmail}
+                {userEmail.email.split("@")[0]}
               </li>
             ))}
           </ul>
@@ -338,12 +350,7 @@ export default function ChatPage() {
               activeChat === "none" ? "hidden" : "block"
             }`}
           >
-            <div
-              onClick={sendFile}
-              className=" rounded-[4px] w-[48px] bg-none hover:bg-slate-300 p-2 flex cursor-pointer duration-300 justify-center items-center"
-            >
-              <img src={paperclip} className="w-4" alt="" />
-            </div>
+            
             <input
               type="text"
               value={inputMessage}

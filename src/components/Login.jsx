@@ -2,6 +2,8 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUser  } from '../context/UserContext';
+import { db } from './firebase';
+import { addDoc, collection } from 'firebase/firestore';
 
 export default function Login() {
     const [email, setEmail] = useState('');
@@ -23,6 +25,9 @@ export default function Login() {
         e.preventDefault();
         const success = await register(email, password);
         if (success) {
+            await addDoc(collection(db,"users"),{
+                email: email
+            })
             console.log('Registration successful');
             navigate('/chats'); // Redirect to chat page after registration
         }
