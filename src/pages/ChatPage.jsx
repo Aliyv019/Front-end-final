@@ -21,6 +21,7 @@ import searchicon from "../assets/img/magnifying.svg";
 import grouppfp from "../assets/img/group_pfp.png";
 import logout from "../assets/img/logout.svg";
 import backicon from "../assets/img/back.svg";
+import { wait } from "@testing-library/user-event/dist/utils";
 
 export default function ChatPage() {
   const [messages, setMessages] = useState({});
@@ -33,7 +34,9 @@ export default function ChatPage() {
   const navigate = useNavigate();
   const pubnubRef = useRef(null);
 
-  
+  useEffect(()=>{
+    scrollToBottom();
+  }, [activeChat,messages]);
   useEffect(() => {
     if (!user) {
       navigate("/");
@@ -122,6 +125,7 @@ export default function ChatPage() {
       }
       allMessages[data.channel].push(data);
     });
+    
   };
 
   useEffect(() => {
@@ -180,6 +184,8 @@ export default function ChatPage() {
         }
       }
     );
+    getmessages();
+    scrollToBottom();
   };
 
   const startPersonalChat = (recipientEmail) => {
