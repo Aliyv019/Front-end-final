@@ -229,7 +229,9 @@ export default function ChatPage() {
           <ul>
             <li
               className="p-2 hover:bg-gray-200 cursor-pointer flex items-center gap-2"
-              onClick={() => setActiveChat("global")}
+              onClick={() => {setActiveChat("global");
+                scrollToBottom();}
+              }
             >
               <img src={grouppfp} className="w-[50px] h-[50px]" alt="" />
               Global Chat
