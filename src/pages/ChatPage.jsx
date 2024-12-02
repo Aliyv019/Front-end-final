@@ -33,21 +33,7 @@ export default function ChatPage() {
   const navigate = useNavigate();
   const pubnubRef = useRef(null);
 
-  const handleFileChange = (e) => {
-    setFile(e.target.files[0]);
-  };
-
-  const handleUpload = () => {
-    if (file) {
-      uploadFile(file);
-    }
-  };
-  const uploadFile = (file) => {
-    const storageRef = ref(storage, `uploads/${file.name}`);
-    uploadBytes(storageRef, file).then((snapshot) => {
-      console.log("Uploaded a blob or file!", snapshot);
-    });
-  };
+  
   useEffect(() => {
     if (!user) {
       navigate("/");
@@ -157,6 +143,7 @@ export default function ChatPage() {
       console.log("Messages:", allMessages);
     };
     fetchMessages();
+
   }, []);
 
   const scrollToBottom = () => {
@@ -206,6 +193,7 @@ export default function ChatPage() {
     setActiveChat(personalChannel);
     getmessages();
     pubnubRef.current.subscribe({ channels: [personalChannel] });
+    scrollToBottom();
   };
 
   const handleLogout = () => {
@@ -352,7 +340,6 @@ export default function ChatPage() {
             <div
               onClick={() => {
                 sendMessage();
-                handleUpload();
               }}
               className="bg-[#F0F2F5] text-white p-4 rounded-[4px] flex justify-center items-center hover:bg-slate-300 focus:outline-none cursor-pointer duration-300"
             >
