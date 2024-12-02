@@ -21,11 +21,28 @@ export default function ChatPage() {
   const [inputMessage, setInputMessage] = useState("");
   const [allUsers, setAllUsers] = useState([]);
   const [activeChat, setActiveChat] = useState("none");
+  const [file, setFile] = useState(null);
   const messagesEndRef = useRef(null);
   const { user, setUser } = useUser();
   const navigate = useNavigate();
   const pubnubRef = useRef(null);
+  
 
+  const handleFileChange = (e) => {
+    setFile(e.target.files[0]);
+  };
+
+  const handleUpload = () => {
+    if (file) {
+      uploadFile(file);
+    }
+  };
+  const uploadFile = (file) => {
+    const storageRef = ref(storage, `uploads/${file.name}`);
+    uploadBytes(storageRef, file).then((snapshot) => {
+      console.log('Uploaded a blob or file!', snapshot);
+    });
+  };
   useEffect(() => {
     if (!user) {
       navigate("/");
@@ -351,6 +368,9 @@ export default function ChatPage() {
             }`}
           >
             
+            <div>
+              <input type="file" accept="image/*" onChange={handleFileChange} />
+
             <input
               type="text"
               value={inputMessage}
@@ -364,10 +384,14 @@ export default function ChatPage() {
               placeholder="Type a message..."
             />
             <div
-              onClick={sendMessage}
+              onClick={()=>{
+                sendMessage();
+                handleUpload();
+              }}
               className="bg-[#F0F2F5] text-white p-4 rounded-[4px] flex justify-center items-center hover:bg-slate-300 focus:outline-none cursor-pointer duration-300"
             >
               <img src={sendicon} className="w-4" alt="" />
+            </div>
             </div>
           </div>
         </div>
