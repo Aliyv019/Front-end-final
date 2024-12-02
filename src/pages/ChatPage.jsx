@@ -4,7 +4,13 @@ import { useNavigate } from "react-router-dom";
 import { useUser } from "../context/UserContext";
 import PubNub from "pubnub";
 import { db } from "../components/firebase";
-import { addDoc, getDocs, collection, orderBy, query } from "firebase/firestore";
+import {
+  addDoc,
+  getDocs,
+  collection,
+  orderBy,
+  query,
+} from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage"; // Import these functions
 import { storage } from "../components/firebase"; // Import storage
 
@@ -13,8 +19,8 @@ import sendicon from "../assets/img/send-icon.svg";
 import paperclip from "../assets/img/paperclip_icon.svg";
 import searchicon from "../assets/img/magnifying.svg";
 import grouppfp from "../assets/img/group_pfp.png";
-import logout from "../assets/img/logout.svg"
-import backicon from "../assets/img/back.svg"
+import logout from "../assets/img/logout.svg";
+import backicon from "../assets/img/back.svg";
 
 export default function ChatPage() {
   const [messages, setMessages] = useState({});
@@ -26,7 +32,6 @@ export default function ChatPage() {
   const { user, setUser } = useUser();
   const navigate = useNavigate();
   const pubnubRef = useRef(null);
-  
 
   const handleFileChange = (e) => {
     setFile(e.target.files[0]);
@@ -40,7 +45,7 @@ export default function ChatPage() {
   const uploadFile = (file) => {
     const storageRef = ref(storage, `uploads/${file.name}`);
     uploadBytes(storageRef, file).then((snapshot) => {
-      console.log('Uploaded a blob or file!', snapshot);
+      console.log("Uploaded a blob or file!", snapshot);
     });
   };
   useEffect(() => {
@@ -76,7 +81,7 @@ export default function ChatPage() {
     try {
       const usersSnapshot = await getDocs(collection(db, "users"));
       const mockUsers = [];
-  
+
       usersSnapshot.forEach((userDoc) => {
         const userData = userDoc.data();
         // Check if userData has an email field
@@ -84,9 +89,9 @@ export default function ChatPage() {
           mockUsers.push(userData);
         }
       });
-  
+
       // Assuming `user` is defined in the component scope
-      setAllUsers(mockUsers.filter((u) =>u.email !=user.email));
+      setAllUsers(mockUsers.filter((u) => u.email != user.email));
     } catch (error) {
       console.error("Error fetching users:", error);
     }
@@ -132,57 +137,13 @@ export default function ChatPage() {
       allMessages[data.channel].push(data);
     });
   };
-  const handleDrop = (e) => {
-    e.preventDefault();
-    const files = Array.from(e.dataTransfer.files);
-    files.forEach((file) => {
-      sendFile(file); // Call the sendFile function for each file dropped
-    });
-  };
 
-  const sendFile = async (file) => {
-    const messageObject = {
-      text: file.name,
-      sender: user.email,
-      timestamp: new Date().toISOString(),
-    };
-
-    // Create a storage reference
-    const storageRef = ref(storage, `files/${file.name}`); // Assuming 'storage' is your Firebase Storage instance
-
-    // Upload the file
-    await uploadBytes(storageRef, file);
-
-    // Get the file's download URL
-    const fileURL = await getDownloadURL(storageRef);
-
-    // Save the message to Firestore with the file URL
-    await addDoc(collection(db, "messages"), {
-      channel: activeChat,
-      text: messageObject.text,
-      sender: messageObject.sender,
-      timestamp: messageObject.timestamp,
-      file: fileURL, // Store the file URL
-    });
-
-    // Publish the message to PubNub
-    pubnubRef.current.publish(
-      {
-        channel: activeChat,
-        message: { ...messageObject, file: fileURL },
-      },
-      (status, response) => {
-        if (status.error) {
-          console.error("Error sending message:", status);
-        } else {
-          setInputMessage(""); // Clear input after sending
-        }
-      }
-    );
-  };
   useEffect(() => {
     const fetchMessages = async () => {
-      const messagesQuery=query(collection(db,"messages"), orderBy("timestamp"))
+      const messagesQuery = query(
+        collection(db, "messages"),
+        orderBy("timestamp")
+      );
       const querySnapshot = await getDocs(messagesQuery);
       const allMessages = {};
       querySnapshot.forEach((doc) => {
@@ -254,12 +215,7 @@ export default function ChatPage() {
   console.log(activeChat);
 
   return (
-    <div
-      className="flex flex-col h-screen"
-      onDrop={handleDrop}
-      onDragOver={(e) => e.preventDefault()} // Prevent default to allow drop
-      onDragEnter={(e) => e.preventDefault()}
-    >
+    <div className="flex flex-col h-screen">
       <div className="flex flex-1 h-screen ">
         {/* Chat List - Always visible on wider screens and visible on mobile when no chat is selected */}
         <div
@@ -281,7 +237,7 @@ export default function ChatPage() {
               <img src={logout} className="w-[30px]" />
             </div>
           </div>
-          
+
           <ul>
             <li
               className="p-2 hover:bg-gray-200 cursor-pointer flex items-center gap-2"
@@ -296,7 +252,11 @@ export default function ChatPage() {
                 className="p-2 hover:bg-gray-200 cursor-pointer flex items-center gap-2"
                 onClick={() => startPersonalChat(userEmail.email)}
               >
-                <img src={default_pfp} className="w-[50px] rounded-full" alt="" />
+                <img
+                  src={default_pfp}
+                  className="w-[50px] rounded-full"
+                  alt=""
+                />
                 {userEmail.email.split("@")[0]}
               </li>
             ))}
@@ -309,9 +269,7 @@ export default function ChatPage() {
             activeChat !== "none" ? "block" : "hidden"
           } md:flex`}
         >
-          <div
-            className={`flex items-center h-[74px] px-5 bg-[#F0F2F5] gap-4`}
-          >
+          <div className={`flex items-center h-[74px] px-5 bg-[#F0F2F5] gap-4`}>
             <div
               onClick={() => setActiveChat("none")}
               className="text-black px-2 py-1 rounded md:hidden cursor-pointer"
@@ -321,11 +279,15 @@ export default function ChatPage() {
             <div className={`flex items-center gap-4 `}>
               <img
                 src={default_pfp}
-                className={`h-[50px] w-[50px] rounded-full ${activeChat === "none" ? "hidden" : ""}`}
+                className={`h-[50px] w-[50px] rounded-full ${
+                  activeChat === "none" ? "hidden" : ""
+                }`}
                 alt=""
               />
               <h2 className="text-xl font-semibold">
-                {activeChat === "none" ? "Please select a chat or start one" : activeChat.split("_")[0].split("@")[0]}
+                {activeChat === "none"
+                  ? "Please select a chat or start one"
+                  : activeChat.split("_")[0].split("@")[0]}
               </h2>
             </div>
           </div>
@@ -349,7 +311,15 @@ export default function ChatPage() {
                       {msg.sender.split("@")[0]}
                     </div>
                   )}
-                  <h2 className={` font-bold  ${msg.sender.split("@")[0]==user.email.split("@")[0] ? "text-[#075E54]":"text-[#25D366]"}`}>{activeChat === "global" ? msg.sender.split("@")[0]:""}</h2>
+                  <h2
+                    className={` font-bold  ${
+                      msg.sender.split("@")[0] == user.email.split("@")[0]
+                        ? "text-[#075E54]"
+                        : "text-[#25D366]"
+                    }`}
+                  >
+                    {activeChat === "global" ? msg.sender.split("@")[0] : ""}
+                  </h2>
                   <div className="break-words mr-8">{msg.text}</div>
                   <div className={`text-xs text-[#111B21]  text-end`}>
                     {new Date(msg.timestamp).toLocaleTimeString().slice(0, 5)}
@@ -367,10 +337,6 @@ export default function ChatPage() {
               activeChat === "none" ? "hidden" : "block"
             }`}
           >
-            
-            <div>
-              <input type="file" accept="image/*" onChange={handleFileChange} />
-
             <input
               type="text"
               value={inputMessage}
@@ -384,14 +350,13 @@ export default function ChatPage() {
               placeholder="Type a message..."
             />
             <div
-              onClick={()=>{
+              onClick={() => {
                 sendMessage();
                 handleUpload();
               }}
               className="bg-[#F0F2F5] text-white p-4 rounded-[4px] flex justify-center items-center hover:bg-slate-300 focus:outline-none cursor-pointer duration-300"
             >
               <img src={sendicon} className="w-4" alt="" />
-            </div>
             </div>
           </div>
         </div>
